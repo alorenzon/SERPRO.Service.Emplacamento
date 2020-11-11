@@ -25,52 +25,6 @@ namespace SERPRO.Service.Emplacamento.Clients
         {
             var baseAddress = new Uri(_config.BaseUrl);
 
-            #region Definição de controller
-
-            //Controller que será chamada
-            var controller = string.Empty;
-
-            switch (tipoIntegracao)
-            {
-                case TipoIntegracaoFabricante.AceiteDevolucaoBlanks:
-                    controller = "aceites-devolucao-blanks";
-                    break;
-                case TipoIntegracaoFabricante.Blanks:
-                    controller = "blanks";
-                    break;
-                case TipoIntegracaoFabricante.BlanksDevolvidos:
-                    controller = "blanks-devolvidos";
-                    break;
-                case TipoIntegracaoFabricante.BlanksEnviados:
-                    controller = "blanks-enviados";
-                    break;
-                case TipoIntegracaoFabricante.CancelamentoEnvioBlanks:
-                    controller = "cancelamentos-envios-blanks";
-                    break;
-                case TipoIntegracaoFabricante.ClienteAutenticado:
-                    controller = "cliente-autenticado";
-                    break;
-                case TipoIntegracaoFabricante.EnvioBlanks:
-                    controller = "envios-blanks";
-                    break;
-                case TipoIntegracaoFabricante.Estampador:
-                    controller = "estampadores";
-                    break;
-                case TipoIntegracaoFabricante.InutilizacaoBlanks:
-                    controller = "inutilizacoes-blanks";
-                    break;
-                case TipoIntegracaoFabricante.Lotes:
-                    controller = "lotes";
-                    break;
-                case TipoIntegracaoFabricante.RecebimentoBlanks:
-                    controller = "recebimentos-blanks";
-                    break;
-                default:
-                    break;
-            }
-
-            #endregion
-
             //usa proxy, caso tenha
             var proxy = new WebProxy
             {
@@ -93,7 +47,7 @@ namespace SERPRO.Service.Emplacamento.Clients
                 Timeout = TimeSpan.FromMinutes(_config.Timeout)
             };
 
-            string requestUri = "api-fabricantes/" + controller;
+            string requestUri = GetEndpoint(tipoIntegracao);
 
             if (parameters != null)
                 requestUri = QueryHelpers.AddQueryString(requestUri, parameters);
@@ -114,52 +68,6 @@ namespace SERPRO.Service.Emplacamento.Clients
         {
             var baseAddress = new Uri(_config.BaseUrl);
 
-            #region Definição de controller
-
-            //Controller que será chamada
-            var controller = string.Empty;
-
-            switch (tipoIntegracao)
-            {
-                case TipoIntegracaoFabricante.AceiteDevolucaoBlanks:
-                    controller = "aceites-devolucao-blanks";
-                    break;
-                case TipoIntegracaoFabricante.Blanks:
-                    controller = "blanks";
-                    break;
-                case TipoIntegracaoFabricante.BlanksDevolvidos:
-                    controller = "blanks-devolvidos";
-                    break;
-                case TipoIntegracaoFabricante.BlanksEnviados:
-                    controller = "blanks-enviados";
-                    break;
-                case TipoIntegracaoFabricante.CancelamentoEnvioBlanks:
-                    controller = "cancelamentos-envios-blanks";
-                    break;
-                case TipoIntegracaoFabricante.ClienteAutenticado:
-                    controller = "cliente-autenticado";
-                    break;
-                case TipoIntegracaoFabricante.EnvioBlanks:
-                    controller = "envios-blanks";
-                    break;
-                case TipoIntegracaoFabricante.Estampador:
-                    controller = "estampadores";
-                    break;
-                case TipoIntegracaoFabricante.InutilizacaoBlanks:
-                    controller = "inutilizacoes-blanks";
-                    break;
-                case TipoIntegracaoFabricante.Lotes:
-                    controller = "lotes";
-                    break;
-                case TipoIntegracaoFabricante.RecebimentoBlanks:
-                    controller = "recebimentos-blanks";
-                    break;
-                default:
-                    break;
-            }
-
-            #endregion
-
             //usa proxy, caso tenha
             var proxy = new WebProxy
             {
@@ -168,6 +76,9 @@ namespace SERPRO.Service.Emplacamento.Clients
 
             using var httpHandler = new HttpClientHandler
             {
+                //Ignora aviso de certificado inválido do Service Layer
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; },
+
                 //Define uso do proxy
                 Proxy = proxy
             };
@@ -178,7 +89,7 @@ namespace SERPRO.Service.Emplacamento.Clients
                 Timeout = TimeSpan.FromMinutes(_config.Timeout)
             };
 
-            var requestUri = "api-fabricante/" + controller + "/" + identifier;
+            var requestUri = GetEndpoint(tipoIntegracao) + "/" + identifier;
 
             var response = await httpClient.GetAsync(requestUri);
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -207,8 +118,41 @@ namespace SERPRO.Service.Emplacamento.Clients
 
             var baseAddress = new Uri(_config.BaseUrl);
 
-            #region Definição de controller
+            //usa proxy, caso tenha
+            var proxy = new WebProxy
+            {
+                UseDefaultCredentials = true,
+            };
 
+            using var httpHandler = new HttpClientHandler
+            {
+                //Ignora aviso de certificado inválido do Service Layer
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; },
+
+                //Define uso do proxy
+                Proxy = proxy
+            };
+
+            using var httpClient = new HttpClient(httpHandler)
+            {
+                BaseAddress = baseAddress,
+                Timeout = TimeSpan.FromMinutes(_config.Timeout)
+            };
+
+            var response = await httpClient.PostAsync(GetEndpoint(tipoIntegracao), contentString);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            //Retorno
+            if (response.StatusCode == HttpStatusCode.Created)
+                return responseContent;
+            else if (response.StatusCode == HttpStatusCode.BadRequest)
+                throw new ArgumentException(responseContent);
+            else
+                throw new Exception(responseContent);
+        }
+
+        private string GetEndpoint(TipoIntegracaoFabricante tipoIntegracao)
+        {
             //Controller que será chamada
             var controller = string.Empty;
 
@@ -251,36 +195,7 @@ namespace SERPRO.Service.Emplacamento.Clients
                     break;
             }
 
-            #endregion
-
-            //usa proxy, caso tenha
-            var proxy = new WebProxy
-            {
-                UseDefaultCredentials = true,
-            };
-
-            using var httpHandler = new HttpClientHandler
-            {
-                //Define uso do proxy
-                Proxy = proxy
-            };
-
-            using var httpClient = new HttpClient(httpHandler)
-            {
-                BaseAddress = baseAddress,
-                Timeout = TimeSpan.FromMinutes(_config.Timeout)
-            };
-
-            var response = await httpClient.PostAsync("api-fabricante/" + controller, contentString);
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            //Retorno
-            if (response.StatusCode == HttpStatusCode.Created)
-                return responseContent;
-            else if (response.StatusCode == HttpStatusCode.BadRequest)
-                throw new ArgumentException(responseContent);
-            else
-                throw new Exception(responseContent);
+            return "api-fabricante/" + controller;
         }
     }
 }
