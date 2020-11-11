@@ -195,7 +195,7 @@ namespace SERPRO.Service.Emplacamento.Clients
                     break;
             }
 
-            return "api-fabricante/" + controller;
+            return "/api-fabricante/" + controller;
         }
     }
 }
